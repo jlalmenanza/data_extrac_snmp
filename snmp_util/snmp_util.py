@@ -1,21 +1,23 @@
 import snmp_util.resources.sql_utils as sql_utils
 from utils.database_util import DatabaseUtil
 from jinjasql import JinjaSql
-import pymssql
+import psycopg2
 import sys
 import os
 import time
-
-
+import psycopg2.extras
+import json
 class Pollerutil():
     def __init__(self, poller_id):
         self.poller_id = poller_id
         self.jinja = JinjaSql(param_style='pyformat')
 
         try:
-           self.conn = pymssql.connect(
-                server=os.environ.get("DB_CONN"), user=os.environ.get("DB_USER"),
-                password=os.environ.get("DB_PASSWORD"), database=os.environ.get("DB_NAME"), login_timeout=30)
+            conn = psycopg2.connect(host=self.server, user=self.user, password=self.password, database=self.database, port=self.port)
+
+        #    self.conn = pymssql.connect(
+        #         server=os.environ.get("DB_CONN"), user=os.environ.get("DB_USER"),
+        #         password=os.environ.get("DB_PASSWORD"), database=os.environ.get("SNMPDB"),os.environ.get("SNMP_DB_PORT"), login_timeout=30)
         except Exception as err:
             sys.exit()
 
@@ -41,13 +43,13 @@ class Pollerutil():
         no_except = True
         while no_except:
             try:
-                db_conn = self.conn
-                cursor = db_conn.cursor(as_dict=True)
+                db_conn = self.get_connection()
+                cursor = db_conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
                 cursor.execute(query,dict(bind_params))
-                resultset = cursor.fetchall()
+                resultset = json.dumps(cursor.fetchall(), indent=2)
                 no_except = False
                 cursor.close()
-                return resultset
+                return json.loads(resultset)
             except Exception as err:
                 db_conn.rollback()
                 if self.deadlock_validator(err):         

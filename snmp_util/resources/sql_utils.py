@@ -6,7 +6,7 @@ class sql_templates(Enum):
 
     oid_config = """select soid.oid_key ,ooid.oid from selected_oid soid
             left join oid_list ooid on soid.oid_key = ooid.oid_key
-            where snmp_poller_id = '{{poll_id | sqlsafe}}' and ooid.brand_name = '{{brand | sqlsafe}}'"""
+            where snmp_poller_id = '{{poll_id | sqlsafe}}' and ooid.device_model = '{{device_model | sqlsafe}}'"""
 
     poll_update_up ="""UPDATE {0} SET {1},datetime = CURRENT_DATE,status = '1' where ip_address = '{2}' """
 
@@ -16,4 +16,5 @@ class sql_templates(Enum):
 
     update_event = """UPDATE snmp_poller SET status = {{status | sqlsafe}} WHERE id = {{id | sqlsafe}}"""
 
-    oid_prev = """SELECT oid_key ,oid from oid_list where brand_name = '{{brand | sqlsafe}}' and oid_key = '{{oid_key | sqlsafe}}'"""
+    oid_prev = """SELECT oid_key ,oid from oid_list where device_model = '{{device_model | sqlsafe}}' and oid_key = '{{oid_key | sqlsafe}}'"""
+

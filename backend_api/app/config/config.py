@@ -24,27 +24,30 @@ class DevelopmentConfig(Config):
     SERVER_HOST = os.environ.get('API_HOST')
     DEBUG = True
     ENV = 'development'
+    
     # SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://{user}:{pw}@{url}:5432/dxsnmp'.format(user='postgres',pw='passw0rd',url='localhost',db='dxsnmp')
-    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://postgres:passw0rd@localhost/dxsnmp'.format(user='postgres',pw='passw0rd',url='localhost',db='dxsnmp')
-   
+    # SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://postgres:passw0rd@localhost/dxsnmp'.format(user='postgres',pw='passw0rd',url='localhost',db='dxsnmp')
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://{0}:{1}@{2}:{4}/{3}'.format(
+        os.environ.get("DB_USER"),os.environ.get("DB_PASSWORD"),
+        os.environ.get("DB_CONN"),os.environ.get("SNMPDB"),os.environ.get("SNMP_DB_PORT"))
 
 class StagingConfig(Config):
     JWT_SECRET_KEY = os.urandom(24)
     SERVER_HOST = os.environ.get('API_HOST')    
     DEBUG = True
     ENV = 'staging'
-    SQLALCHEMY_DATABASE_URI = 'mssql+pyodbc://{0}:{1}@{2}:{4}/{3}?driver=SQL+Server'.format(
-            os.environ.get("DB_USER"), os.environ.get("DB_PASSWORD"), 
-            os.environ.get("DB_CONN"), os.environ.get("DB_NAME"), os.environ.get("DB_PORT"))
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://{0}:{1}@{2}:{4}/{3}'.format(
+        os.environ.get("DB_USER"),os.environ.get("DB_PASSWORD"),
+        os.environ.get("DB_CONN"),os.environ.get("SNMPDB"),os.environ.get("SNMP_DB_PORT"))
 
 class ProductionConfig(Config):
     JWT_SECRET_KEY = os.urandom(24)
     SERVER_HOST = os.environ.get('API_HOST')
     DEBUG = False
     ENV = 'production'
-    SQLALCHEMY_DATABASE_URI = 'mssql+pyodbc://{0}:{1}@{2}:{4}/{3}?driver=SQL+Server'.format(
-            os.environ.get("DB_USER"), os.environ.get("DB_PASSWORD"), 
-            os.environ.get("DB_CONN"), os.environ.get("DB_NAME"), os.environ.get("DB_PORT"))
+    SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://{0}:{1}@{2}:{4}/{3}'.format(
+        os.environ.get("DB_USER"),os.environ.get("DB_PASSWORD"),
+        os.environ.get("DB_CONN"),os.environ.get("SNMPDB"),os.environ.get("SNMP_DB_PORT"))
 
 class TestingConfig(Config):
     JWT_SECRET_KEY = 'testing-key'

@@ -45,7 +45,7 @@ class PollerStatus(Resource):
                 
                 timestamp = sorted(
                     all_dates,
-                    key = lambda d: datetime.strptime(d, '%Y-%m-%d %H:%M:%S.%f'),  
+                    key = lambda d: datetime.strptime(d, '%Y-%m-%d %H:%M:%S'),  
                     reverse=True
                 )[0]
 

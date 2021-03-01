@@ -61,7 +61,7 @@ class SnmpPollerApi(Resource):
                     poller_element['selected_oid'] = selected_oid
                     
                 if 'selected_ips' in args['include']:
-                    conn = DatabaseUtil(os.environ.get("DB_CONN"), os.environ.get("DB_USER"), os.environ.get("DB_PASSWORD"), os.environ.get("DB_NAME"))
+                    conn = DatabaseUtil(os.environ.get("DB_CONN"), os.environ.get("DB_USER"), os.environ.get("DB_PASSWORD"), os.environ.get("SNMPDB"),os.environ.get("SNMP_DB_PORT"))
                     query_string = "Select {0}_id,ip_address,system_description,system_name,brand from {0}".format(poller_element["table_name"])     
                     result = conn.select_query(query_string)
                     poller_element['selected_ip'] = result
@@ -76,7 +76,7 @@ class SnmpPollerApi(Resource):
             
     
     def post(self):
-        conn = DatabaseUtil(os.environ.get("DB_CONN"), os.environ.get("DB_USER"), os.environ.get("DB_PASSWORD"), os.environ.get("DB_NAME"))
+        conn = DatabaseUtil(os.environ.get("DB_CONN"), os.environ.get("DB_USER"), os.environ.get("DB_PASSWORD"), os.environ.get("SNMPDB"),os.environ.get("SNMP_DB_PORT"))
         args = self.api_utils.parameters(self.main_model(), blacklist="append", selected_oid="append", ip_list="append")
         list_of_ids = {}
         try:
@@ -100,7 +100,6 @@ class SnmpPollerApi(Resource):
                         blacklist_obj['snmp_poller_id'] = poller_result
                         blacklist_obj['system_description'] = blacklist_element['system_description']
                         blacklist_obj['system_name'] = blacklist_element['system_name']
-                        blacklist_obj['brand'] = blacklist_element['brand']
                         blacklist_data = BlacklistSchema().load(blacklist_obj)
                         blacklist_result = self.db_utils.insert_data(self.module_name, Blacklist, blacklist_data, commit=True)
                         list_of_ids['blacklist'] = blacklist_result
@@ -119,7 +118,7 @@ class SnmpPollerApi(Resource):
                 SchemaBuilder(args['table_name'], fields=oid_main).create_table(default_date=True)
                 SchemaBuilder().create_data_retention(args['table_name'])
 
-                conn = DatabaseUtil(os.environ.get("DB_CONN"), os.environ.get("DB_USER"), os.environ.get("DB_PASSWORD"), os.environ.get("DB_NAME"))
+                conn = DatabaseUtil(os.environ.get("DB_CONN"), os.environ.get("DB_USER"), os.environ.get("DB_PASSWORD"), os.environ.get("SNMPDB"),os.environ.get("SNMP_DB_PORT"))
                 query_string = 'INSERT INTO {0} (ip_address,system_description,brand,system_name) values ({1})' .format(args['table_name'], '%(ip_address)s,%(system_description)s,%(brand)s ,%(system_name)s')   
                 conn.insert_many_query(query_string, ip_list)
 
@@ -144,7 +143,7 @@ class SnmpPollerApi(Resource):
     def put(self , id = None):
         args = self.api_utils.parameters(self.main_model(), blacklist="append", selected_oid="append", ip_list="append")
         poller_id = id
-        conn = DatabaseUtil(os.environ.get("DB_CONN"), os.environ.get("DB_USER"), os.environ.get("DB_PASSWORD"), os.environ.get("DB_NAME"))
+        conn = DatabaseUtil(os.environ.get("DB_CONN"), os.environ.get("DB_USER"), os.environ.get("DB_PASSWORD"), os.environ.get("SNMPDB"),os.environ.get("SNMP_DB_PORT"))
         poll_data = conn.select_query('Select status from snmp_poller where id = {0}'.format(poller_id))
         if not poll_data:
             return {'message': "ID doesn't exist", "type": "ReferenceError"}, 422
@@ -225,16 +224,17 @@ class SnmpPollerApi(Resource):
             
             if poller: 
                 # poller_tasklist = self.service.check_service(poller[0]['pid'], 'poller.exe')
-                poller_tasklist = self.service.check_service(poller[0]['pid'], 'poller.py')
-                if 'image name' in str(poller_tasklist.decode("utf-8")).lower():
-                    raise ValueError(ErrorObject(type="ServiceError", 
-                            message="Poller is running.").to_json())
-
+                # poller_tasklist = self.service.check_service(poller[0]['pid'], 'poller.py')
+                # print(poller_tasklist)
+                # if 'image name' in str(poller_tasklist.decode("utf-8")).lower():
+                #     raise ValueError(ErrorObject(type="ServiceError", 
+                #             message="Poller is running.").to_json())
+                
                 delete_status = self.db_utils.delete_data_using_id(SnmpPoller, {'id': id})
 
                 get_table_name = poller[0]['table_name']
                 self.db_utils.drop_table(get_table_name)
-                logger.log("Deleting the data on SNMP Poller, id : %s" % (id))
+                logger.log("Deleting the data on SNMP Poller, id : {0}",format(id))
                 return {'message': "Successfully deleted."}, 200
             else:
                 logger.log("Encountered error on poller: ID doesn't exist", log_type='ERROR')

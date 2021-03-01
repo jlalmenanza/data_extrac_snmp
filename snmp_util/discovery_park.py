@@ -1,6 +1,6 @@
 from snmp_util.reference.get_ip_interfaces import get_ip_interfaces 
 from snmp_util.reference.device_info import device_info 
-from snmp_util.reference.model_parser import model_parser as model_parser
+from snmp_util.reference.modelparser import model_parser as model_parser
 import time
 
 class network_discovery:
@@ -15,15 +15,10 @@ class network_discovery:
     
     def validate_snmp(self,ip_list): 
         main_info = []
-        # start_time = time.time()
-        # for ip_address in ip_list:
-        for i in range(len(ip_list)):
-            
-            ip_address = ip_list[i]
+        start_time = time.time()
+        for ip_address in ip_list:
             mdi_runner = device_info(ip_address,self.community_string)
-            
             raw_info = mdi_runner.run()
-            
             if raw_info["is_valid"]:
                 raw_info["device_info"]["ip_address"] = ip_address
                 bp_runner = model_parser(raw_info["device_info"])
@@ -33,15 +28,13 @@ class network_discovery:
 
     def run(self):
         ip_list = self.get_network_interfaces()
-       
         if len(ip_list) > 0:
             return(self.validate_snmp(ip_list))
         else:
             return []
 
 
-# scanner = network_discovery('10.20.19.180',24,'public1')
+# scanner = network_discovery('192.168.1.1',24,'trends-ro')
 
 # result_list = scanner.run()
-
 # print(result_list)

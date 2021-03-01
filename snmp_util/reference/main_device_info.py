@@ -1,6 +1,6 @@
 from pysnmp import debug
 from snmp_util.reference.device_info import device_info as mdi 
-from snmp_util.reference.brand_parser import brand_parser as brand_parser 
+from snmp_util.reference.model_parser import model_parser as model_parser 
 
 # debug.setLogger(debug.Debug('dsp', 'msgproc', 'secmod','mibbuild'))
 class main_device_info:
@@ -12,7 +12,7 @@ class main_device_info:
         mdi_runner = mdi(self.ip_address,self.community_string)
         raw_info = mdi_runner.run()
         if raw_info["is_valid"]:
-            bp_runner = brand_parser(raw_info["device_info"])
+            bp_runner = model_parser(raw_info["device_info"])
             main_info = bp_runner.run()
             main_info["ip_address"] = self.ip_address
             return {'is_valid': True , 'main_info' : main_info}
