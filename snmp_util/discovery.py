@@ -2,26 +2,30 @@ from snmp_util.reference.get_ip_interfaces import get_ip_interfaces
 from snmp_util.reference.device_info import device_info 
 from snmp_util.reference.model_parser import model_parser as model_parser
 import time
+from netaddr import *
 
 class network_discovery:
     def __init__(self, ip_address, subnet,community_string):
         self.ip_range = """{0}/{1}""".format(ip_address,subnet)
         self.community_string = community_string
 
+    # def get_network_interfaces(self):
+    #     runner = get_ip_interfaces(self.ip_range)
+    #     ip_list = runner.run()
+    #     return ip_list
     def get_network_interfaces(self):
-        runner = get_ip_interfaces(self.ip_range)
-        ip_list = runner.run()
+       
+        ip_list = []
+        for ip in IPNetwork(self.ip_range):
+            ip_list.append('%s' % ip)
         return ip_list
-    
-    def validate_snmp(self,ip_list): 
+    def validate_snmp(self,ip_list):
         main_info = []
-        # start_time = time.time()
-        # for ip_address in ip_list:
         for i in range(len(ip_list)):
-            
+            print( ip_list[i])
             ip_address = ip_list[i]
             mdi_runner = device_info(ip_address,self.community_string)
-            
+        
             raw_info = mdi_runner.run()
             
             if raw_info["is_valid"]:
@@ -31,17 +35,17 @@ class network_discovery:
                 main_info.append(bp_info)
         return main_info
 
+
     def run(self):
         ip_list = self.get_network_interfaces()
-       
         if len(ip_list) > 0:
             return(self.validate_snmp(ip_list))
         else:
             return []
 
 
-# scanner = network_discovery('10.20.19.180',24,'public1')
+scanner = network_discovery('10.20.19.180',32,'public')
+result_list = scanner.run()
+print(result_list)
 
-# result_list = scanner.run()
 
-# print(result_list)

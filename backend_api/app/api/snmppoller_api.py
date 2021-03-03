@@ -62,7 +62,7 @@ class SnmpPollerApi(Resource):
                     
                 if 'selected_ips' in args['include']:
                     conn = DatabaseUtil(os.environ.get("DB_CONN"), os.environ.get("DB_USER"), os.environ.get("DB_PASSWORD"), os.environ.get("SNMPDB"),os.environ.get("SNMP_DB_PORT"))
-                    query_string = "Select {0}_id,ip_address,system_description,system_name,brand from {0}".format(poller_element["table_name"])     
+                    query_string = "Select {0}_id,ip_address,system_description,system_name,device_model from {0}".format(poller_element["table_name"])     
                     result = conn.select_query(query_string)
                     poller_element['selected_ip'] = result
 
@@ -112,14 +112,14 @@ class SnmpPollerApi(Resource):
                         selected_oid_data = SelectedOidSchema().load(selected_oid_obj)
                         selected_oid_result = self.db_utils.insert_data(self.module_name, SelectedOid, selected_oid_data, commit=True)
                         list_of_ids['selected_oid'] = selected_oid_result
-                oid_raw  = conn.select_query('Select oid_key from oid_list')
+                oid_raw  = conn.select_query('select oid_key from oid_list group by oid_key')
                 oid_main = [oid['oid_key'] for oid in oid_raw]
-                oid_main.extend(['ip_address', 'status','brand','system_description','system_name'])
+                oid_main.extend(['ip_address', 'status','device_model','system_description','system_name'])
                 SchemaBuilder(args['table_name'], fields=oid_main).create_table(default_date=True)
                 SchemaBuilder().create_data_retention(args['table_name'])
 
                 conn = DatabaseUtil(os.environ.get("DB_CONN"), os.environ.get("DB_USER"), os.environ.get("DB_PASSWORD"), os.environ.get("SNMPDB"),os.environ.get("SNMP_DB_PORT"))
-                query_string = 'INSERT INTO {0} (ip_address,system_description,brand,system_name) values ({1})' .format(args['table_name'], '%(ip_address)s,%(system_description)s,%(brand)s ,%(system_name)s')   
+                query_string = 'INSERT INTO {0} (ip_address,system_description,device_model,system_name) values ({1})' .format(args['table_name'], '%(ip_address)s,%(system_description)s,%(device_model)s ,%(system_name)s')   
                 conn.insert_many_query(query_string, ip_list)
 
                 args['snmp_poller_id'] = poller_result
@@ -168,7 +168,7 @@ class SnmpPollerApi(Resource):
                             blacklist_obj['ip_address'] = blacklist_element['ip_address']
                             blacklist_obj['system_description'] = blacklist_element['system_description']
                             blacklist_obj['system_name'] = blacklist_element['system_name']
-                            blacklist_obj['brand'] = blacklist_element['brand']
+                            blacklist_obj['device_model'] = blacklist_element['device_model']
                             blacklist_obj['snmp_poller_id'] = poller_id
                             blacklist_data = BlacklistSchema().load(blacklist_obj)
                             blacklist_result = self.db_utils.insert_data(self.module_name, Blacklist, blacklist_data, commit=True)
@@ -188,7 +188,7 @@ class SnmpPollerApi(Resource):
                         table_name = conn.select_query('Select table_name from snmp_poller where id = %s ' % (poller_id))[0]
                         new_table_name = table_name["table_name"]
                         conn.truncate_table('Truncate table %s ' % (new_table_name))
-                        query_string = 'INSERT INTO {0} (ip_address,system_description,brand,system_name) values ({1})' .format(new_table_name, '%(ip_address)s,%(system_description)s,%(brand)s ,%(system_name)s')   
+                        query_string = 'INSERT INTO {0} (ip_address,system_description,device_model,system_name) values ({1})' .format(new_table_name, '%(ip_address)s,%(system_description)s,%(device_model)s ,%(system_name)s')   
                         conn.insert_many_query(query_string, ip_list)
                     
                     del args['table_name']

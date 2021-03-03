@@ -2,15 +2,6 @@ FROM python:3.7
  
 WORKDIR /srv
 ADD . .
-#for pymssql
-ENV DB_CONN=10.0.0.4
-ENV SNMP_DB_PORT=30008
-ENV DB_PASSWORD=postgres
-ENV SNMPDB=dxsnmp
-ENV DB_USER=postgres
-ENV API_PORT=80
-ENV VALIDATE_API_URL=http://172.17.28.122:30000/token/validate
-RUN pip install --upgrade pip
  
 ENV DB_CONN=10.20.19.216
 ENV SNMP_DB_PORT=30008
@@ -18,7 +9,8 @@ ENV DB_PASSWORD=postgres
 ENV SNMPDB=dxsnmp
 ENV DB_USER=postgres
 ENV API_PORT=80
-ENV VALIDATE_API_URL=https://10.20.19.216/snmp/token/validate
+ENV VALIDATE_API_URL=http://api-user-node-port-service.data-extrac.svc.cluster.local:80/users/token/validate
+ENV NORMALIZE_API=http://api-normalize-node-port-service.data-extrac.svc.cluster.local:80/normalize/normalizedata
 RUN pip install --upgrade pip
 
 RUN apt-get update
@@ -41,6 +33,7 @@ RUN pip install datetime==4.3
 RUN pip install psutil==5.6.3
 RUN pip install jinjasql==0.1.7
 RUN pip install psycopg2==2.8.5
+RUN pip install netaddr
 
  
 EXPOSE 80 
