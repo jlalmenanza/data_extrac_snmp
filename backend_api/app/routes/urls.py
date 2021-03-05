@@ -11,6 +11,8 @@ from backend_api.app.api.poller_data import PollerData
 from backend_api.app.api.poller_status import PollerStatus
 
 from backend_api.app.api.networkdiscovery_api import NetworkDiscovery
+from backend_api.app.api.schema_api import SchemaAPI
+
 
 
 api.add_resource(SnmpPollerApi, '/snmp/snmp/poller', '/snmp/snmp/poller/<int:id>')
@@ -22,4 +24,5 @@ api.add_resource(NetworkDiscovery, '/snmp/network/discovery')
 api.add_resource(DataPollingApi, '/snmp/data/view/polling')
 api.add_resource(PollerData, '/snmp/poller/data', '/snmp/poller/data/<string:table_name>')
 api.add_resource(PollerStatus, '/snmp/poller/status', '/snmp/poller/status/<string:table_name>')
+api.add_resource(SchemaAPI, '/snmp/schema/tables' ,'/snmp/schema/tables/<string:table_name>/columns')
 

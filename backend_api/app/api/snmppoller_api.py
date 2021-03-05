@@ -50,6 +50,7 @@ class SnmpPollerApi(Resource):
             poller_result = self.api_utils.get_paginated_list(poller_result, args['start'], args['limit'])
            
             for poller_element in poller_result:
+                poller_element['extractor'] = [{"source": "SNMP"}]
                 if 'blacklist' in args['include']:
                     blacklist = self.db_utils.select_with_filter(Blacklist, BlacklistSchema, 
                             {'snmp_poller_id': poller_element['id']})  

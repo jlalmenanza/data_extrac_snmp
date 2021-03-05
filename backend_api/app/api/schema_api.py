@@ -22,7 +22,9 @@ class SchemaAPI(Resource):
                 AND table_name NOT LIKE '%_current' \
                 AND table_name NOT LIKE '%_monthly' \
                 AND table_name NOT LIKE '%_weekly' \
-                AND table_name NOT LIKE '%_intraday' ORDER BY TABLE_NAME ASC".format(
+                AND table_name NOT LIKE '%_intraday' \
+                and table_schema = 'public' \
+                ORDER BY TABLE_NAME ASC".format(
                     ",".join("'{}'".format(table) for table in default))
         else:
             sql = "select column_name, ordinal_position \
