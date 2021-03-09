@@ -15,6 +15,7 @@ from backend_api.app.models.blacklist_schema import BlacklistSchema
 from backend_api.app.models.selected_oid import SelectedOid
 from backend_api.app.models.selected_oid_schema import SelectedOidSchema
 from backend_api.app.common.service_manager import ServiceManager
+from backend_api.app.models.ip_list_schema import IpListSchema
 from backend_api.app import logger
 from backend_api.app.api import db
 from utils.database_util import DatabaseUtil
@@ -75,24 +76,28 @@ class SnmpPollerApi(Resource):
             db.session.close()
             db.engine.dispose()
             
-    
     def post(self):
-        conn = DatabaseUtil(os.environ.get("DB_CONN"), os.environ.get("DB_USER"), os.environ.get("DB_PASSWORD"), os.environ.get("SNMPDB"),os.environ.get("SNMP_DB_PORT"))
+        conn = DatabaseUtil(os.environ.get("DB_CONN"), os.environ.get("DB_USER"), os.environ.get("DB_PASSWORD"), os.environ.get("DB_NAME"))
         args = self.api_utils.parameters(self.main_model(), blacklist="append", selected_oid="append", ip_list="append")
         list_of_ids = {}
         try:
             blacklist = list(eval(items) for items in list(args['blacklist']))
             selected_oid = list(filter(None, args['selected_oid'])) 
-            ip_list = list(eval(items) for items in list(args['ip_list'])) 
+            ip_list = list(eval(items) for items in list(args['ip_list']))
+
             del args['ip_list']
             del args['blacklist']   
             del args['selected_oid']
         
             SnmpPollerSchema().load(args)
             if (selected_oid and ip_list)  and self.api_utils.ip_validator(ip_list)  and self.api_utils.ip_validator(blacklist) and self.api_utils.oid_validator(conn,selected_oid) :
+                args["table_name"] = "snmp_{0}".format(args['table_name'])
                 poller_data = self.main_schema().load(args)
                 poller_result = self.db_utils.insert_data(self.module_name,self.main_model, poller_data, commit=True)
                 list_of_ids['snmp_poller'] = poller_result
+
+                for ip_data in ip_list:
+                    IpListSchema().load(ip_data)
 
                 if blacklist is not None:
                     for blacklist_element in blacklist:
@@ -101,6 +106,7 @@ class SnmpPollerApi(Resource):
                         blacklist_obj['snmp_poller_id'] = poller_result
                         blacklist_obj['system_description'] = blacklist_element['system_description']
                         blacklist_obj['system_name'] = blacklist_element['system_name']
+                        blacklist_obj['device_model'] = blacklist_element['device_model']
                         blacklist_data = BlacklistSchema().load(blacklist_obj)
                         blacklist_result = self.db_utils.insert_data(self.module_name, Blacklist, blacklist_data, commit=True)
                         list_of_ids['blacklist'] = blacklist_result
@@ -113,17 +119,21 @@ class SnmpPollerApi(Resource):
                         selected_oid_data = SelectedOidSchema().load(selected_oid_obj)
                         selected_oid_result = self.db_utils.insert_data(self.module_name, SelectedOid, selected_oid_data, commit=True)
                         list_of_ids['selected_oid'] = selected_oid_result
-                oid_raw  = conn.select_query('select oid_key from oid_list group by oid_key')
+                oid_raw  = conn.select_query('Select oid_key from oid_list group by oid_key')
                 oid_main = [oid['oid_key'] for oid in oid_raw]
                 oid_main.extend(['ip_address', 'status','device_model','system_description','system_name'])
+                # args['table_name'] = "snmp_{0}".format(args['table_name'])
                 SchemaBuilder(args['table_name'], fields=oid_main).create_table(default_date=True)
                 SchemaBuilder().create_data_retention(args['table_name'])
+               
 
-                conn = DatabaseUtil(os.environ.get("DB_CONN"), os.environ.get("DB_USER"), os.environ.get("DB_PASSWORD"), os.environ.get("SNMPDB"),os.environ.get("SNMP_DB_PORT"))
+                conn = DatabaseUtil(os.environ.get("DB_CONN"), os.environ.get("DB_USER"), os.environ.get("DB_PASSWORD"), os.environ.get("DB_NAME"))
                 query_string = 'INSERT INTO {0} (ip_address,system_description,device_model,system_name) values ({1})' .format(args['table_name'], '%(ip_address)s,%(system_description)s,%(device_model)s ,%(system_name)s')   
                 conn.insert_many_query(query_string, ip_list)
 
                 args['snmp_poller_id'] = poller_result
+
+               
                 logger.log("Inserted data to SNMP Poller. Status CREATED 201")
                 return {'message': 'Successfully added.', 'snmp_poller_payload': args}, 201
             else:
@@ -137,6 +147,67 @@ class SnmpPollerApi(Resource):
             logger.log("Error encountered on SNMP poller : %s" % str(err), log_type='ERROR')
             self.db_utils.data_rollback(list_of_ids)
             return eval(str(err)), 422
+    # def post(self):
+    #     conn = DatabaseUtil(os.environ.get("DB_CONN"), os.environ.get("DB_USER"), os.environ.get("DB_PASSWORD"), os.environ.get("SNMPDB"),os.environ.get("SNMP_DB_PORT"))
+    #     args = self.api_utils.parameters(self.main_model(), blacklist="append", selected_oid="append", ip_list="append")
+    #     list_of_ids = {}
+    #     try:
+    #         blacklist = list(eval(items) for items in list(args['blacklist']))
+    #         selected_oid = list(filter(None, args['selected_oid'])) 
+    #         ip_list = list(eval(items) for items in list(args['ip_list'])) 
+    #         del args['ip_list']
+    #         del args['blacklist']   
+    #         del args['selected_oid']
+        
+    #         SnmpPollerSchema().load(args)
+    #         if (selected_oid and ip_list)  and self.api_utils.ip_validator(ip_list)  and self.api_utils.ip_validator(blacklist) and self.api_utils.oid_validator(conn,selected_oid) :
+    #             poller_data = self.main_schema().load(args)
+    #             poller_result = self.db_utils.insert_data(self.module_name,self.main_model, poller_data, commit=True)
+    #             list_of_ids['snmp_poller'] = poller_result
+
+    #             if blacklist is not None:
+    #                 for blacklist_element in blacklist:
+    #                     blacklist_obj = {}
+    #                     blacklist_obj['ip_address'] = blacklist_element['ip_address']
+    #                     blacklist_obj['snmp_poller_id'] = poller_result
+    #                     blacklist_obj['system_description'] = blacklist_element['system_description']
+    #                     blacklist_obj['system_name'] = blacklist_element['system_name']
+    #                     blacklist_data = BlacklistSchema().load(blacklist_obj)
+    #                     blacklist_result = self.db_utils.insert_data(self.module_name, Blacklist, blacklist_data, commit=True)
+    #                     list_of_ids['blacklist'] = blacklist_result
+
+    #             if selected_oid is not None:    
+    #                 for selected_oid_element in selected_oid:
+    #                     selected_oid_obj = {}
+    #                     selected_oid_obj['oid_key'] = selected_oid_element
+    #                     selected_oid_obj['snmp_poller_id'] = poller_result
+    #                     selected_oid_data = SelectedOidSchema().load(selected_oid_obj)
+    #                     selected_oid_result = self.db_utils.insert_data(self.module_name, SelectedOid, selected_oid_data, commit=True)
+    #                     list_of_ids['selected_oid'] = selected_oid_result
+    #             oid_raw  = conn.select_query('select oid_key from oid_list group by oid_key')
+    #             oid_main = [oid['oid_key'] for oid in oid_raw]
+    #             oid_main.extend(['ip_address', 'status','device_model','system_description','system_name'])
+    #             SchemaBuilder(args['table_name'], fields=oid_main).create_table(default_date=True)
+    #             SchemaBuilder().create_data_retention(args['table_name'])
+
+    #             conn = DatabaseUtil(os.environ.get("DB_CONN"), os.environ.get("DB_USER"), os.environ.get("DB_PASSWORD"), os.environ.get("SNMPDB"),os.environ.get("SNMP_DB_PORT"))
+    #             query_string = 'INSERT INTO {0} (ip_address,system_description,device_model,system_name) values ({1})' .format(args['table_name'], '%(ip_address)s,%(system_description)s,%(device_model)s ,%(system_name)s')   
+    #             conn.insert_many_query(query_string, ip_list)
+
+    #             args['snmp_poller_id'] = poller_result
+    #             logger.log("Inserted data to SNMP Poller. Status CREATED 201")
+    #             return {'message': 'Successfully added.', 'snmp_poller_payload': args}, 201
+    #         else:
+    #             return {'message': 'Payload verification failed.', 'snmp_poller_payload': args}, 422
+            
+    #     except ValidationError as value_error:
+    #         logger.log("Validation encountered on SNMP poller table: %s" % (str(value_error)), log_type='ERROR')
+    #         self.db_utils.data_rollback(list_of_ids)
+    #         return {'lists': value_error.messages, 'type': 'ValidationError', 'message': 'Validation errors in your request'}, 422
+    #     except Exception as err:
+    #         logger.log("Error encountered on SNMP poller : %s" % str(err), log_type='ERROR')
+    #         self.db_utils.data_rollback(list_of_ids)
+    #         return eval(str(err)), 422
 
 
     # edit
