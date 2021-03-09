@@ -49,6 +49,7 @@ class SnmpPollerApi(Resource):
             schema_option = self.api_utils.schema_options(self.main_schema,args['columns'])
             poller_result = self.main_schema(**schema_option).dump(poller_session)
             poller_result = self.api_utils.get_paginated_list(poller_result, args['start'], args['limit'])
+            
            
             for poller_element in poller_result:
                 poller_element['extractor'] = [{"source": "SNMP"}]
@@ -77,7 +78,7 @@ class SnmpPollerApi(Resource):
             db.engine.dispose()
             
     def post(self):
-        conn = DatabaseUtil(os.environ.get("DB_CONN"), os.environ.get("DB_USER"), os.environ.get("DB_PASSWORD"), os.environ.get("DB_NAME"))
+        conn = DatabaseUtil(os.environ.get("DB_CONN"), os.environ.get("DB_USER"), os.environ.get("DB_PASSWORD"), os.environ.get("SNMPDB"),os.environ.get("SNMP_DB_PORT"))
         args = self.api_utils.parameters(self.main_model(), blacklist="append", selected_oid="append", ip_list="append")
         list_of_ids = {}
         try:
