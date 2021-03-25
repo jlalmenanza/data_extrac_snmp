@@ -58,14 +58,14 @@ class ServiceManager():
         # check if pid exists
         if psutil.pid_exists(pid):
             process = psutil.Process(pid)
-            if process.name() == 'python.exe' and (process.cmdline()[1] and process.cmdline()[1] in services):
+            if process.name() == 'python' and (process.cmdline()[1] and process.cmdline()[1] in services):
                 return True
         
         # if pid does not exist, check if command exists
         # for process in psutil.process_iter():
         #     try:
         #         if len(process.cmdline()) == 3:
-        #             if process.name() == 'python.exe' and (process.cmdline()[1] and process.cmdline()[1] in services) and process.cmdline()[2] == self.id:
+        #             if process.name() == 'python' and (process.cmdline()[1] and process.cmdline()[1] in services) and process.cmdline()[2] == self.id:
         #                 if process.pid != os.getpid():
         #                     return True
         #     except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
